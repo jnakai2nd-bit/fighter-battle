@@ -1,0 +1,1916 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cursor Battle</title>
+<style>
+    body { margin:0; overflow:hidden; background:black; color:white; font-family:Arial; }
+    #menu, #designMenu, #onevoneMenu {
+        position:absolute; top:20%; width:100%; text-align:center;
+    }
+    .btn {
+        padding:15px 30px; margin:10px; background:white; color:black;
+        font-size:22px; border-radius:8px; cursor:pointer; display:inline-block;
+    }
+    #upgradeBox {
+        position:absolute; top:25%; width:100%; text-align:center; display:none;
+    }
+    .upgradeBtn {
+        padding:12px 24px; margin:8px; background:white; color:black;
+        font-size:20px; border-radius:8px; cursor:pointer; display:inline-block;
+    }
+    #shootButton {
+        position:absolute; bottom:30px; right:30px; width:70px; height:70px;
+        background:red; border-radius:50%; cursor:pointer; display:none;
+        z-index:10;
+        touch-action: manipulation;
+    }
+    #joystickBase {
+        position:absolute;
+        bottom:30px;
+        left:30px;
+        width:140px;
+        height:140px;
+        z-index:10;
+        border-radius:50%;
+        background:rgba(255,255,255,0.12);
+        border:2px solid rgba(255,255,255,0.3);
+        touch-action:none;
+        display:none;
+    }
+    #joystickThumb {
+        position:absolute;
+        left:50%;
+        top:50%;
+        width:60px;
+        height:60px;
+        margin-left:-30px;
+        margin-top:-30px;
+        border-radius:50%;
+        background:rgba(255,255,255,0.7);
+        box-shadow:0 0 12px rgba(255,255,255,0.4);
+    }
+    #wsStatus {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.7);
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.1);
+        display: none;
+        z-index: 50;
+        font-size: 14px;
+    }
+    #wsHelp {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background: #111;
+        color: #fff;
+        padding: 18px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.12);
+        max-width: 420px;
+        display: none;
+        z-index: 60;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    }
+    #wsHelp h3 { margin: 0 0 8px 0; font-size: 16px; }
+    #wsHelp p { margin: 6px 0; font-size: 13px; }
+    #wsHelp ul { margin: 8px 0 12px 18px; font-size: 13px; }
+    #wsHelp .closeBtn { display:inline-block; margin-top:8px; padding:6px 10px; background:#222; border:1px solid #444; border-radius:6px; cursor:pointer; }
+    input { padding:8px; font-size:18px; }
+</style>
+</head>
+<body>
+
+
+<div id="menu">
+    <h1>Cursor Battle</h1>
+    <div class="btn" onclick="startFFA()">Free For All</div>
+    <div class="btn" onclick="startInfinite()">Infinite</div>
+    <div class="btn" onclick="openDesign()">Design Mode</div>
+    <div class="btn" onclick="open1v1()">1v1 Online</div>
+    <p>WASD or joystick to move, Space/A or red button to shoot</p>
+</div>
+
+
+<div id="designMenu" style="display:none;">
+    <h2>Design Mode</h2>
+    <p>Choose Color</p>
+    <div class="btn" onclick="setDesignColor('blue')">Blue</div>
+    <div class="btn" onclick="setDesignColor('green')">Green</div>
+    <div class="btn" onclick="setDesignColor('red')">Red</div>
+    <div class="btn" onclick="setDesignColor('yellow')">Yellow</div>
+    <p>Choose Shape</p>
+    <div class="btn" onclick="setDesignShape('dot')">Dot</div>
+    <div class="btn" onclick="setDesignShape('triangle')">Triangle</div>
+    <div class="btn" onclick="setDesignShape('arrow')">Arrow</div>
+    <div class="btn" onclick="setDesignShape('jet')">Jet</div>
+    <div class="btn" onclick="setDesignShape('cursor')">Cursor</div>
+    <p><span id="designSummary"></span></p>
+    <div class="btn" onclick="closeDesign()">Back</div>
+</div>
+
+
+<div id="onevoneMenu" style="display:none;">
+    <h2>1v1 Online</h2>
+    <div class="btn" onclick="host1v1()">Host</div>
+    <div class="btn" onclick="showJoin()">Join</div>
+    <p id="hostCodeText"></p>
+    <div id="joinBox" style="margin-top:10px; display:none;">
+        <input id="joinCodeInput" placeholder="Enter code">
+        <div class="btn" onclick="join1v1()">Join Lobby</div>
+    </div>
+    <div class="btn" onclick="backToMenu()">Back</div>
+</div>
+
+
+<div id="upgradeBox">
+    <h2>Choose Upgrade</h2>
+    <div id="upgrade1Btn" class="upgradeBtn"></div>
+    <div id="upgrade2Btn" class="upgradeBtn"></div>
+    <div id="upgrade3Btn" class="upgradeBtn"></div>
+</div>
+
+
+<div id="wsStatus"></div>
+<div id="bossOverlay" onclick="resumeAfterBoss()" style="display:none; position:fixed; left:50%; top:40%; transform:translate(-50%,-50%); background:rgba(17,17,17,0.95); color:#fff; padding:18px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); z-index:9999; text-align:center; cursor:pointer; pointer-events:auto;">
+    <h2 id="bossOverlayTitle">Boss Defeated!</h2>
+    <p id="bossOverlayText">Press Space/A/Enter or click here to continue</p>
+    <div style="margin-top:8px; font-size:13px; color:#ddd;">Tap this box or press Space/A/Enter to resume</div>
+</div>
+<div id="wsHelp">
+    <h3>Can't connect to game server</h3>
+    <p>Possible reasons and fixes:</p>
+    <ul>
+        <li><strong>Server not running:</strong> Start the game server on the machine you entered (run the Node server or use a tunnel).</li>
+        <li><strong>Wrong host or port:</strong> Ensure you entered the correct host:port (or full <code>ws://host:port</code>).</li>
+        <li><strong>Firewall or network:</strong> The host machine may block incoming connections — try connecting from the same machine first.</li>
+        <li><strong>Using file://</strong>: If opened from file, you must provide a reachable WebSocket server address when prompted.</li>
+        <li><strong>HTTPS page:</strong> If the page is served with HTTPS, use a <code>wss://</code> server (secure WebSocket).</li>
+    </ul>
+    <p>Quick steps: start the server, or run <code>ngrok http 3000</code> and use its host, or host the `my_game` folder on a server.</p>
+    <div class="closeBtn" onclick="hideWSHelp()">Close</div>
+</div>
+
+
+<canvas id="gameCanvas"></canvas>
+<div id="shootButton" onclick="manualShoot()"></div>
+<div id="joystickBase"><div id="joystickThumb"></div></div>
+
+
+<div id="cheatCodeBox" style="position:fixed;bottom:20px;left:20px;width:160px;background:rgba(0,0,0,0.8);border:2px solid #666;border-radius:4px;padding:8px;display:none;z-index:100;">
+    <input id="cheatInput" type="text" placeholder="code" style="width:100%;padding:4px;background:#000;color:#666;border:1px solid #444;border-radius:3px;font-size:12px;box-sizing:border-box;" />
+</div>
+<div id="jetColorBox" style="position:fixed;bottom:20px;left:20px;width:220px;background:rgba(0,0,0,0.9);border:2px solid #66f;border-radius:6px;padding:10px;display:none;z-index:110;">
+    <div style="margin-bottom:8px;color:#fff;font-size:13px;">Choose your jet colors:</div>
+    <div style="display:flex;gap:8px;">
+        <div id="jetGreenBtn" class="btn" style="flex:1;padding:6px;font-size:12px;">Green Player</div>
+        <div id="jetBlueBtn" class="btn" style="flex:1;padding:6px;font-size:12px;">Blue Player</div>
+    </div>
+</div>
+
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// If you deploy a WebSocket relay, set its URL here (e.g. 'wss://your-relay.example.com').
+// Leave empty to use same-origin WebSocket (not suitable for Netlify static-only hosting).
+const RELAY_WS_URL = '';
+
+
+let mode = "";
+let keys = {};
+let lastDir = -Math.PI/2; // default up
+let ws = null;
+let playerId = null;
+let remoteState = null;
+
+
+let design = { color: 'white', shape: 'cursor' };
+
+
+let player = {
+    x: canvas.width/2,
+    y: canvas.height/2,
+    speed: 4,
+    bullets: [],
+    bulletSpeed: 8,
+    lives: 5,   // infinite mode now 5
+    score: 0,
+    multiShot: 1,
+    bouncyLevel: 0,
+    shieldHits: 0,
+    contagiousLevel: 0
+};
+
+
+let gamepadIndex = null;
+let prevGamepadShoot = false;
+let joystick = { x: 0, y: 0, active: false };
+let joystickRadius = 60;
+let bots = [];
+let duoShips = [];
+let upgradesChosen = {heart:0, speed:0, multi:0, bouncy:0, thunder:0, contagious:0};
+let upgradePending = false;
+let nextUpgradeScore = 10;
+let specialUpgradePending = false;
+let specialUpgradeAwarded = false;
+let specialChosen = null; // id of special chosen at boss defeats
+let boss = null; // boss object when spawned
+let defeatedBosses = []; // array to hold defeated bosses so they stay visible
+let missiles = [];
+let meteors = [];
+let bossSpawned = false;
+let bossPhase = 0; // 0 before Pablo, 1 after Pablo, 2 after Gregory, 3 after Gregory
+let pausedForBoss = false; // true while waiting for player to press space after boss defeat
+let afterBossDefeat = false; // when true, bots get changed behavior
+let additionalSpecialGranted = false; // whether extra special after boss was granted
+let postBossCooldown = 0; // frames to wait before next boss can spawn
+let savedBotsCount = 0;
+let savedDuoShips = [];
+let jetHackActive = false; // jet1 cheat code activated
+let jetHackPlayerColor = 'lightgreen';
+let jetHackBotColor = 'lightblue';
+let pb2Active = false; // pb2 cheat code activated for purple bullets
+let pb2BulletColor = 'plum';
+let jetColorPending = false; // true while waiting for jet1 color choice
+// wave flow control
+let pendingWave = 0; // 0 = none, 2 = wave2 waiting, 3 = wave3 waiting
+let selectedWaveAbility = null; // special ability chosen for wave start
+let wave3Active = false; // true when wave 3 infinite blue ships are active
+let specialUpgradeOfferScore = 250;
+let specialOfferGiven = false;
+let upgradeScoreStep = 10;
+let andrew = null;
+let andrewSpawned = false;
+let andrewDefeated = false;
+const UPGRADE_POOL = [
+    { id: 'heart', label: 'Extra Heart' },
+    { id: 'speed', label: 'Faster Bullets' },
+    { id: 'multi', label: 'More Bullets' },
+    { id: 'bouncy', label: 'Bouncy Bullets' },
+    { id: 'thunder', label: 'Thunder Shield' },
+    { id: 'contagious', label: 'Contagious' }
+];
+const SPECIAL_UPGRADE_POOL = [
+    { id: 'laser', label: 'Laser Gun' },
+    { id: 'razor', label: 'Razor Armor' },
+    { id: 'duo', label: 'Duo Ships' }
+];
+
+
+window.addEventListener("resize", () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+
+document.addEventListener("keydown", e => {
+    // if paused for boss defeat, Space resumes (don't fire)
+    if (pausedForBoss && (e.key === " " || e.code === "Space" || e.key.toLowerCase() === 'a' || e.key === 'Enter')) {
+        e.preventDefault();
+        resumeAfterBoss();
+        return;
+    }
+    keys[e.key] = true;
+    // If 1v1 menu join box is visible, allow Space to trigger join
+    try {
+        const onevone = document.getElementById("onevoneMenu");
+        const joinBox = document.getElementById("joinBox");
+        if ((e.key === " " || e.code === "Space") && onevone && onevone.style.display !== "none" && joinBox && joinBox.style.display !== "none") {
+            e.preventDefault();
+            join1v1();
+            return;
+        }
+    } catch (err) {
+        // ignore
+    }
+    if (e.key === " ") shoot(player);
+});
+document.addEventListener("keyup", e => keys[e.key] = false);
+
+
+window.addEventListener("gamepadconnected", e => {
+    gamepadIndex = e.gamepad.index;
+    console.log("Gamepad connected:", e.gamepad.id);
+});
+window.addEventListener("gamepaddisconnected", e => {
+    if (gamepadIndex === e.gamepad.index) {
+        gamepadIndex = null;
+        prevGamepadShoot = false;
+    }
+    console.log("Gamepad disconnected:", e.gamepad.id);
+});
+
+
+const joystickBase = document.getElementById("joystickBase");
+const joystickThumb = document.getElementById("joystickThumb");
+const shootButton = document.getElementById("shootButton");
+
+
+shootButton.addEventListener("touchstart", e => {
+    e.preventDefault();
+    manualShoot();
+});
+shootButton.addEventListener("mousedown", e => {
+    e.preventDefault();
+    manualShoot();
+});
+
+
+function setJoystickVisibility(visible) {
+    joystickBase.style.display = visible ? "block" : "none";
+}
+
+
+function updateJoystickVisual() {
+    joystickThumb.style.transform = `translate(${joystick.x * joystickRadius}px, ${joystick.y * joystickRadius}px)`;
+}
+
+
+function resetJoystick() {
+    joystick.x = 0;
+    joystick.y = 0;
+    joystick.active = false;
+    updateJoystickVisual();
+}
+
+
+function handleJoystickTouch(evt) {
+    evt.preventDefault();
+    const touch = evt.changedTouches[0];
+    const rect = joystickBase.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = touch.clientX - centerX;
+    const dy = touch.clientY - centerY;
+    const distance = Math.hypot(dx, dy);
+    const maxDistance = joystickRadius;
+    const ratio = distance > maxDistance ? maxDistance / distance : 1;
+    joystick.x = (dx * ratio) / maxDistance;
+    joystick.y = (dy * ratio) / maxDistance;
+    joystick.active = true;
+    updateJoystickVisual();
+}
+
+
+joystickBase.addEventListener("touchstart", evt => {
+    for (let touch of evt.changedTouches) {
+        handleJoystickTouch({ changedTouches: [touch], preventDefault: () => evt.preventDefault() });
+        break;
+    }
+});
+joystickBase.addEventListener("touchmove", evt => {
+    for (let touch of evt.changedTouches) {
+        handleJoystickTouch({ changedTouches: [touch], preventDefault: () => evt.preventDefault() });
+        break;
+    }
+});
+joystickBase.addEventListener("touchend", evt => {
+    resetJoystick();
+});
+joystickBase.addEventListener("touchcancel", evt => {
+    resetJoystick();
+});
+
+
+// Cheat code box handlers
+const cheatCodeBox = document.getElementById("cheatCodeBox");
+const cheatInput = document.getElementById("cheatInput");
+const gameCanvas = document.getElementById("gameCanvas");
+
+
+gameCanvas.addEventListener("click", e => {
+    // Check if click is in bottom-left corner area (where cheat box is)
+    const rect = gameCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (x < 140 && y > rect.height - 60) {
+        cheatCodeBox.style.display = cheatCodeBox.style.display === "none" ? "block" : "none";
+        if (cheatCodeBox.style.display === "block") {
+            cheatInput.focus();
+            cheatInput.value = "";
+        }
+    }
+});
+
+
+const jetColorBox = document.getElementById("jetColorBox");
+const jetGreenBtn = document.getElementById("jetGreenBtn");
+const jetBlueBtn = document.getElementById("jetBlueBtn");
+
+
+function showJetColorChoice() {
+    jetColorPending = true;
+    jetColorBox.style.display = "block";
+    cheatCodeBox.style.display = "none";
+}
+
+
+function hideJetColorChoice() {
+    jetColorPending = false;
+    jetColorBox.style.display = "none";
+}
+
+
+function chooseJetColor(playerColor, botColor) {
+    jetHackActive = true;
+    pb2Active = false;
+    jetHackPlayerColor = playerColor;
+    jetHackBotColor = botColor;
+    cheatInput.style.color = "#00ff00";
+    cheatInput.value = "JET1 ACTIVE";
+    hideJetColorChoice();
+}
+
+
+jetGreenBtn.addEventListener("click", () => chooseJetColor('lightgreen', 'lightblue'));
+jetBlueBtn.addEventListener("click", () => chooseJetColor('lightblue', 'lightgreen'));
+
+
+cheatInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        const code = cheatInput.value.trim().toLowerCase();
+            if (code === "jet1") {
+            cheatInput.value = "JET1: choose color";
+            showJetColorChoice();
+            e.preventDefault();
+            return;
+        }
+        if (code === "pb2") {
+            pb2Active = true;
+            jetHackActive = false;
+            cheatInput.style.color = "#d8b7ff";
+            cheatInput.value = "PB2 ACTIVE";
+        }
+        e.preventDefault();
+        cheatCodeBox.style.display = "none";
+    }
+});
+
+
+cheatInput.addEventListener("blur", () => {
+    if (!cheatInput.value) {
+        cheatCodeBox.style.display = "none";
+    }
+});
+
+
+function getGamepad() {
+    if (gamepadIndex === null) {
+        const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+        for (let i = 0; i < pads.length; i++) {
+            if (pads[i]) {
+                gamepadIndex = i;
+                break;
+            }
+        }
+    }
+    const pads = navigator.getGamepads ? navigator.getGamepads() : [];
+    return pads[gamepadIndex] || null;
+}
+
+
+function updateGamepadInput() {
+    const pad = getGamepad();
+    if (!pad) {
+        prevGamepadShoot = false;
+        return { x: 0, y: 0, shoot: false };
+    }
+
+
+    const deadzone = 0.25;
+    let x = pad.axes[0] || 0;
+    let y = pad.axes[1] || 0;
+    if (Math.abs(x) < deadzone) x = 0;
+    if (Math.abs(y) < deadzone) y = 0;
+
+
+    if (x === 0 && y === 0) {
+        x = (pad.buttons[14] && pad.buttons[14].pressed) ? -1 : x; // dpad left
+        x = (pad.buttons[15] && pad.buttons[15].pressed) ? 1 : x;  // dpad right
+        y = (pad.buttons[12] && pad.buttons[12].pressed) ? -1 : y; // dpad up
+        y = (pad.buttons[13] && pad.buttons[13].pressed) ? 1 : y;  // dpad down
+    }
+
+
+    const shoot = (pad.buttons[0] && pad.buttons[0].pressed) || (pad.buttons[1] && pad.buttons[1].pressed);
+    return { x, y, shoot };
+}
+
+
+function openDesign() {
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("designMenu").style.display = "block";
+    updateDesignSummary();
+}
+function closeDesign() {
+    document.getElementById("designMenu").style.display = "none";
+    document.getElementById("menu").style.display = "block";
+}
+function setDesignColor(c) {
+    design.color = c;
+    updateDesignSummary();
+}
+function setDesignShape(s) {
+    design.shape = s;
+    updateDesignSummary();
+}
+function updateDesignSummary() {
+    document.getElementById("designSummary").textContent =
+        "Current: " + design.color + " " + design.shape;
+}
+
+
+function open1v1() {
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("onevoneMenu").style.display = "block";
+}
+function backToMenu() {
+    document.getElementById("onevoneMenu").style.display = "none";
+    document.getElementById("menu").style.display = "block";
+}
+
+
+function startFFA() {
+    mode = "ffa";
+    resetPlayerState();
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("shootButton").style.display = "block";
+    setJoystickVisibility(true);
+    spawnBots(4);
+    gameLoop();
+}
+function startInfinite() {
+    mode = "infinite";
+    resetPlayerState();
+    player.lives = 5;
+    document.getElementById("menu").style.display = "none";
+    document.getElementById("shootButton").style.display = "block";
+    setJoystickVisibility(true);
+    spawnBots(4);
+    gameLoop();
+}
+
+
+function resetPlayerState() {
+    player.x = canvas.width/2;
+    player.y = canvas.height/2;
+    player.bullets = [];
+    player.score = 0;
+    player.multiShot = 1;
+    upgradesChosen = {heart:0, speed:0, multi:0, bouncy:0, thunder:0, contagious:0};
+    upgradePending = false;
+    nextUpgradeScore = 10;
+    player.bouncyLevel = 0;
+    player.shieldHits = 0;
+    player.contagiousLevel = 0;
+    document.getElementById("upgradeBox").style.display = "none";
+    specialUpgradePending = false;
+    specialUpgradeAwarded = false;
+    specialOfferGiven = false;
+    upgradeScoreStep = 10;
+    andrew = null;
+    andrewSpawned = false;
+    andrewDefeated = false;
+    player.laserGun = false;
+    player.razorArmor = false;
+    player.hasDuoShip = false;
+    duoShips = [];
+    // reset boss-related state
+    specialChosen = null;
+    boss = null;
+    defeatedBosses = []; // clear defeated bosses
+    missiles = [];
+    bossSpawned = false;
+    bossPhase = 0;
+    pausedForBoss = false;
+    afterBossDefeat = false;
+    additionalSpecialGranted = false;
+    postBossCooldown = 0;
+    jetHackActive = false;
+}
+
+
+function spawnBots(n) {
+    bots = [];
+    for (let i=0;i<n;i++) {
+        bots.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height,
+            speed: 2,
+            bullets: [],
+            bulletSpeed: 6,
+            score: 0,
+            driftAngle: Math.random()*Math.PI*2,
+            driftTimer: 0,
+            isBot: true,
+            color: "red"
+        });
+    }
+}
+
+
+function movePlayer() {
+    const gp = updateGamepadInput();
+    const x = joystick.active ? joystick.x : gp.x;
+    const y = joystick.active ? joystick.y : gp.y;
+
+
+    if (keys["w"] || y < 0) { player.y -= player.speed; lastDir = -Math.PI/2; }
+    if (keys["s"] || y > 0) { player.y += player.speed; lastDir = Math.PI/2; }
+    if (keys["a"] || x < 0) { player.x -= player.speed; lastDir = Math.PI; }
+    if (keys["d"] || x > 0) { player.x += player.speed; lastDir = 0; }
+
+
+    if (gp.shoot && !prevGamepadShoot) {
+        shoot(player);
+    }
+    prevGamepadShoot = gp.shoot;
+
+
+    player.x = Math.max(0, Math.min(canvas.width, player.x));
+    player.y = Math.max(0, Math.min(canvas.height, player.y));
+}
+
+
+function moveBots() {
+    bots.forEach(bot => {
+        if (bot.isAndrew) {
+            const angle = Math.atan2(player.y - bot.y, player.x - bot.x);
+            bot.x += Math.cos(angle) * bot.speed;
+            bot.y += Math.sin(angle) * bot.speed;
+            bot.shootTimer--;
+            if (bot.shootTimer <= 0) {
+                shoot(bot);
+                bot.shootTimer = 32;
+            }
+            return;
+        }
+
+        bot.driftTimer--;
+        if (bot.driftTimer <= 0) {
+            bot.driftAngle = Math.random()*Math.PI*2;
+            bot.driftTimer = 120;
+        }
+        bot.x += Math.cos(bot.driftAngle)*bot.speed;
+        bot.y += Math.sin(bot.driftAngle)*bot.speed;
+
+        if (bot.x<0 || bot.x>canvas.width || bot.y<0 || bot.y>canvas.height) {
+            bot.x = Math.random()*canvas.width;
+            bot.y = Math.random()*canvas.height;
+        }
+
+        if (Math.random()<0.02) shoot(bot);
+    });
+}
+
+
+function shoot(obj) {
+    if (obj === player) {
+        const centerAngle = -Math.PI / 2;
+        const count = Math.max(1, Math.min(player.multiShot, 5));
+        const spread = Math.PI / 12;
+        const startAngle = centerAngle - spread * (count - 1) / 2;
+
+        for (let i = 0; i < count; i++) {
+            obj.bullets.push({
+                x: obj.x,
+                y: obj.y,
+                angle: startAngle + spread * i,
+                bouncesRemaining: player.bouncyLevel
+            });
+        }
+    } else {
+        if (obj.isAndrew) {
+            const base = Math.atan2(player.y - obj.y, player.x - obj.x);
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: base - 0.08, bouncesRemaining: 6, damage: 5 });
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: base + 0.08, bouncesRemaining: 6, damage: 5 });
+        } else if (obj.isDuoShip) {
+            const base = Math.atan2(player.y - obj.y, player.x - obj.x);
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: base - 0.12 });
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: base });
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: base + 0.12 });
+        } else if (obj.isBot && wave3Active) {
+            const base = Math.random() * Math.PI * 2;
+            const spread = 0.12;
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: base - spread });
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: base });
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: base + spread });
+        } else if (obj.isBot && afterBossDefeat) {
+            const angle = Math.random() * Math.PI * 2;
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: angle - 0.06 });
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: angle + 0.06 });
+        } else {
+            const angle = Math.random() * Math.PI * 2;
+            obj.bullets.push({ x: obj.x, y: obj.y, angle: angle });
+        }
+    }
+}
+
+
+function handleBulletWallBounce(b) {
+    let bounced = false;
+    if (b.x < 0) {
+        b.x = 0;
+        b.angle = Math.PI - b.angle;
+        bounced = true;
+    } else if (b.x > canvas.width) {
+        b.x = canvas.width;
+        b.angle = Math.PI - b.angle;
+        bounced = true;
+    }
+    if (b.y < 0) {
+        b.y = 0;
+        b.angle = -b.angle;
+        bounced = true;
+    } else if (b.y > canvas.height) {
+        b.y = canvas.height;
+        b.angle = -b.angle;
+        bounced = true;
+    }
+    if (bounced && b.bouncesRemaining > 0) {
+        b.bouncesRemaining -= 1;
+    }
+}
+
+
+function manualShoot() { shoot(player); }
+
+
+function moveBullets() {
+    player.bullets.forEach(b => {
+        b.x += Math.cos(b.angle)*player.bulletSpeed;
+        b.y += Math.sin(b.angle)*player.bulletSpeed;
+        if (b.bouncesRemaining > 0) {
+            handleBulletWallBounce(b);
+        }
+    });
+    player.bullets = player.bullets.filter(b => onScreen(b.x,b.y) || b.bouncesRemaining > 0);
+
+    bots.forEach(bot => {
+        bot.bullets.forEach(b => {
+            b.x += Math.cos(b.angle)*(bot.bulletSpeed || 6);
+            b.y += Math.sin(b.angle)*(bot.bulletSpeed || 6);
+            if (b.bouncesRemaining > 0) {
+                handleBulletWallBounce(b);
+            }
+        });
+        bot.bullets = bot.bullets.filter(b => onScreen(b.x,b.y) || b.bouncesRemaining > 0);
+    });
+}
+function onScreen(x,y) {
+    return x>=-20 && x<=canvas.width+20 && y>=-20 && y<=canvas.height+20;
+}
+
+
+function moveDuoShips() {
+    duoShips.forEach(ship => {
+        const angle = Math.atan2(player.y - ship.y, player.x - ship.x);
+        ship.x += Math.cos(angle) * ship.speed;
+        ship.y += Math.sin(angle) * ship.speed;
+        if (ship.x < 0) ship.x = 0;
+        if (ship.x > canvas.width) ship.x = canvas.width;
+        if (ship.y < 0) ship.y = 0;
+        if (ship.y > canvas.height) ship.y = canvas.height;
+        ship.shootTimer--;
+        if (ship.shootTimer <= 0) {
+            shoot(ship);
+            ship.shootTimer = 70 + Math.floor(Math.random()*30);
+        }
+        ship.bullets.forEach(b => {
+            b.x += Math.cos(b.angle)*ship.bulletSpeed;
+            b.y += Math.sin(b.angle)*ship.bulletSpeed;
+        });
+        ship.bullets = ship.bullets.filter(b => onScreen(b.x,b.y));
+    });
+}
+
+
+/* Boss + Meteors */
+function spawnBoss() {
+    boss = {
+        x: canvas.width/2,
+        y: canvas.height/2,
+        health: 50,
+        size: 100,
+        shootTimer: 50,
+        speed: 6,
+        driftAngle: Math.random()*Math.PI*2,
+        driftTimer: 0,
+        bullets: [],
+        type: 'pablo'
+    };
+    // remove other bots and duo ships while boss fight happens
+    savedBotsCount = bots.length || 0;
+    savedDuoShips = duoShips.slice();
+    bots = [];
+    duoShips = [];
+    bossSpawned = true;
+    bossPhase = 1;
+    player.lives += 10;
+}
+
+
+function spawnGregoryBoss() {
+    boss = {
+        x: canvas.width/2,
+        y: 90,
+        health: 500,
+        size: 90,
+        shootTimer: 40,
+        speed: 0,
+        missiles: [],
+        type: 'gregory'
+    };
+    savedBotsCount = bots.length || 0;
+    savedDuoShips = duoShips.slice();
+    bots = [];
+    duoShips = [];
+    bossSpawned = true;
+    bossPhase = 2;
+    player.lives += 10;
+}
+
+function spawnAndrew() {
+    andrewSpawned = true;
+    andrew = {
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        speed: 4.2,
+        bullets: [],
+        bulletSpeed: 7,
+        driftAngle: Math.random() * Math.PI * 2,
+        driftTimer: 0,
+        isBot: true,
+        isAndrew: true,
+        color: "orange",
+        health: 150,
+        shootTimer: 35
+    };
+    bots.push(andrew);
+}
+
+
+function spawnMeteor() {
+    if (!boss) return;
+    const radius = 14 + Math.random()*8;
+    const angle = Math.atan2(player.y - boss.y, player.x - boss.x) + (Math.random()-0.5)*0.4;
+    meteors.push({
+        x: boss.x,
+        y: boss.y,
+        vx: Math.cos(angle) * 2.6,
+        vy: Math.sin(angle) * 2.6,
+        health: 1,
+        radius,
+        damage: 1,
+        color: '#c97a2b'
+    });
+}
+
+
+function spawnMissilesFromBoss(count) {
+    const baseSpeed = 4.2; // faster
+    const baseRadius = 60;
+    for (let i = 0; i < count; i++) {
+        const angle = (i / count) * Math.PI * 2 + (Math.random()-0.5)*0.2;
+        const speed = baseSpeed + Math.random()*0.4;
+        missiles.push({
+            x: boss.x,
+            y: boss.y,
+            vx: Math.cos(angle)*speed,
+            vy: Math.sin(angle)*speed,
+            health: 1,
+            radius: baseRadius,
+            length: 110,
+            width: 18,
+            color: '#8a8a8a',
+            bouncesRemaining: 4
+        });
+    }
+}
+
+
+function moveMissiles() {
+    missiles.forEach(m => {
+        m.x += m.vx;
+        m.y += m.vy;
+        if (m.bouncesRemaining !== undefined && m.bouncesRemaining > 0) {
+            let bounced = false;
+            if (m.x < m.radius) {
+                m.x = m.radius;
+                m.vx = -m.vx;
+                bounced = true;
+            } else if (m.x > canvas.width - m.radius) {
+                m.x = canvas.width - m.radius;
+                m.vx = -m.vx;
+                bounced = true;
+            }
+            if (m.y < m.radius) {
+                m.y = m.radius;
+                m.vy = -m.vy;
+                bounced = true;
+            } else if (m.y > canvas.height - m.radius) {
+                m.y = canvas.height - m.radius;
+                m.vy = -m.vy;
+                bounced = true;
+            }
+            if (bounced) {
+                m.bouncesRemaining--;
+            }
+        }
+    });
+    missiles = missiles.filter(m => (m.y < canvas.height + 200 && m.x > -200 && m.x < canvas.width + 200 && m.health > 0));
+}
+
+function moveMeteors() {
+    meteors.forEach(m => {
+        m.x += m.vx;
+        m.y += m.vy;
+    });
+    meteors = meteors.filter(m => (m.y < canvas.height + 200 && m.x > -200 && m.x < canvas.width + 200 && m.health > 0));
+}
+
+
+function updateBoss() {
+    if (!boss || boss.defeated) return; // don't update defeated bosses
+    if (boss.type === 'pablo') {
+        boss.driftTimer--;
+        if (boss.driftTimer <= 0) {
+            boss.driftAngle = Math.random()*Math.PI*2;
+            boss.driftTimer = 30 + Math.floor(Math.random()*40);
+        }
+        boss.x += Math.cos(boss.driftAngle)*boss.speed;
+        boss.y += Math.sin(boss.driftAngle)*boss.speed;
+        boss.x = Math.max(80, Math.min(canvas.width-80, boss.x));
+        boss.y = Math.max(80, Math.min(canvas.height-80, boss.y));
+
+        boss.shootTimer--;
+        if (boss.shootTimer <= 0) {
+            boss.shootTimer = 45 + Math.floor(Math.random()*30);
+            spawnMeteor();
+            if (Math.random() < 0.55) spawnMeteor();
+        }
+        if (boss.bullets) {
+            boss.bullets.forEach(b => { b.x += Math.cos(b.angle)*4; b.y += Math.sin(b.angle)*4; });
+            boss.bullets = boss.bullets.filter(b => onScreen(b.x,b.y));
+        }
+    } else if (boss.type === 'gregory') {
+        boss.x = canvas.width/2;
+        boss.y = 90;
+        boss.shootTimer--;
+        if (boss.shootTimer <= 0) {
+            boss.shootTimer = 45 + Math.floor(Math.random()*30);
+            spawnMissilesFromBoss(8 + Math.floor(Math.random()*4));
+        }
+    }
+}
+
+
+function drawBoss() {
+    // Helper function to draw a single boss
+    function drawSingleBoss(boss) {
+        // draw a large fighter jet body with two guns
+        ctx.save();
+        ctx.translate(boss.x, boss.y);
+        ctx.fillStyle = boss.defeated ? "#555" : "#888"; // darker if defeated
+        ctx.beginPath();
+        ctx.moveTo(-60, -20);
+        ctx.lineTo(60, -20);
+        ctx.lineTo(40, 0);
+        ctx.lineTo(60, 20);
+        ctx.lineTo(-60, 20);
+        ctx.closePath();
+        ctx.fill();
+
+
+        // left gun
+        ctx.fillStyle = "#333";
+        ctx.fillRect(-48, -6, 20, 12);
+        // right gun
+        ctx.fillRect(28, -6, 20, 12);
+
+
+        // health number in center (or "defeated" if dead)
+        ctx.fillStyle = boss.defeated ? "#888" : "white";
+        ctx.font = "24px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(boss.defeated ? "X" : boss.health, 0, 6);
+        // label under boss
+        ctx.font = "18px Arial";
+        ctx.fillStyle = boss.defeated ? "#666" : "#ddd";
+        ctx.fillText(boss.type === 'gregory' ? "gregory" : "pablo", 0, boss.size/2 + 22);
+        ctx.restore();
+    }
+
+
+    if (boss) {
+        drawSingleBoss(boss);
+
+        // draw boss bullets (pablo only, and only if not defeated)
+        if (boss.type === 'pablo' && boss.bullets && !boss.defeated) {
+            ctx.fillStyle = "orange";
+            boss.bullets.forEach(b => ctx.fillRect(b.x-6,b.y-6,12,12));
+        }
+    }
+
+
+    // draw missiles
+    missiles.forEach(m => {
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        ctx.rotate(Math.atan2(m.vy, m.vx));
+        ctx.fillStyle = m.color || '#8a8a8a';
+        ctx.beginPath();
+        ctx.rect(-m.length / 2, -m.width / 2, m.length, m.width);
+        ctx.fill();
+        ctx.fillStyle = '#cfcfcf';
+        ctx.beginPath();
+        ctx.arc(m.length / 2 - 10, 0, m.width * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = 'white';
+        ctx.font = '12px Arial';
+        ctx.fillText(m.health, m.x, m.y + 4);
+    });
+
+    // draw meteors
+    meteors.forEach(m => {
+        ctx.fillStyle = m.color || '#c97a2b';
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, m.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'white';
+        ctx.font = '10px Arial';
+        ctx.fillText('1', m.x, m.y + 3);
+    });
+}
+
+
+function checkBossCollisions() {
+    if (!boss) return;
+    // player bullets vs boss
+    for (const b of player.bullets) {
+        if (b.hit || !boss) continue;
+        if (dist(b.x,b.y,boss.x,boss.y) < boss.size/2) {
+            b.hit = true;
+            boss.health -= 1;
+            if (boss.health <= 0) {
+                const bossType = boss.type;
+                boss.bullets = [];
+                missiles = [];
+                meteors = [];
+                boss = null;
+                bossSpawned = false;
+                if (bossType === 'pablo') {
+                    bossPhase = 1;
+                    upgradeScoreStep = 50;
+                    nextUpgradeScore = Math.max(player.score + upgradeScoreStep, 50);
+                    pendingWave = 2;
+                    pausedForBoss = true;
+                    const randIdx = Math.floor(Math.random() * SPECIAL_UPGRADE_POOL.length);
+                    selectedWaveAbility = SPECIAL_UPGRADE_POOL[randIdx].id;
+                    const overlay = document.getElementById('bossOverlay');
+                    overlay.style.display = 'block';
+                    overlay.style.zIndex = 9999;
+                    overlay.style.background = 'rgba(17,17,17,0.95)';
+                    overlay.style.left = '50%';
+                    overlay.style.top = '45%';
+                    document.getElementById('bossOverlayTitle').textContent = 'Wave 2';
+                    document.getElementById('bossOverlayText').textContent = 'Ability: ' + SPECIAL_UPGRADE_POOL[randIdx].label + ' — Press Space/A or click here to continue';
+                    console.log('Showing Wave 2 overlay with ability:', SPECIAL_UPGRADE_POOL[randIdx].id);
+                } else if (bossType === 'gregory') {
+                    bossPhase = 3;
+                    pendingWave = 3;
+                    pausedForBoss = true;
+                    const overlay3 = document.getElementById('bossOverlay');
+                    overlay3.style.display = 'block';
+                    overlay3.style.zIndex = 9999;
+                    overlay3.style.background = 'rgba(17,17,17,0.95)';
+                    overlay3.style.left = '50%';
+                    overlay3.style.top = '45%';
+                    document.getElementById('bossOverlayTitle').textContent = 'Wave 3';
+                    document.getElementById('bossOverlayText').textContent = 'Infinite wave incoming — Press Space/A or click here to continue';
+                    console.log('Showing Wave 3 overlay');
+                }
+            }
+        }
+    }
+
+
+    // missiles vs player
+    missiles.forEach(m => {
+        if (dist(m.x,m.y,player.x,player.y) < m.radius + 10) {
+            player.lives -= (boss && boss.type === 'gregory' ? 2 : 1);
+            resetPlayer();
+            m.health = 0;
+        }
+    });
+
+    // meteors vs player
+    meteors.forEach(m => {
+        if (dist(m.x,m.y,player.x,player.y) < m.radius + 10) {
+            player.lives -= m.damage || 1;
+            resetPlayer();
+            m.health = 0;
+        }
+    });
+
+    // bullets vs missiles: missiles are unbreakable by player fire
+    missiles = missiles.filter(m => m.health > 0 || m.y < canvas.height + 200);
+    meteors = meteors.filter(m => m.health > 0 || m.y < canvas.height + 200);
+}
+
+
+function showRemainingSpecialOptions() {
+    if (!specialChosen) return; // nothing to offer
+    const remaining = SPECIAL_UPGRADE_POOL.filter(u => u.id !== specialChosen);
+    const buttons = [document.getElementById("upgrade1Btn"), document.getElementById("upgrade2Btn"), document.getElementById("upgrade3Btn")];
+    // clear
+    buttons.forEach(b => { b.textContent = ''; b.onclick = null; });
+    // only show up to 2 remaining in first two buttons
+    for (let i=0;i<remaining.length;i++) {
+        buttons[i].textContent = remaining[i].label;
+        buttons[i].onclick = () => chooseAdditionalSpecialUpgrade(remaining[i].id);
+    }
+    document.getElementById('upgradeBox').style.display = 'block';
+}
+
+
+function chooseAdditionalSpecialUpgrade(type) {
+    if (type === "laser") player.laserGun = true;
+    if (type === "razor") player.razorArmor = true;
+    if (type === "duo") {
+        if (!player.hasDuoShip) {
+            player.hasDuoShip = true;
+            duoShips.push({ x: player.x + 40, y: player.y - 40, speed: 2, bullets: [], bulletSpeed: 5, driftAngle: Math.random()*Math.PI*2, driftTimer: 0, shootTimer: 90 });
+        }
+    }
+    additionalSpecialGranted = true;
+    document.getElementById('upgradeBox').style.display = 'none';
+    // apply immediately and resume game
+    resumeAfterBoss();
+}
+
+
+function resumeAfterBoss() {
+    // continue game with afterBossDefeat changes
+    // hide overlay and resume
+    pausedForBoss = false;
+    upgradePending = false;
+    specialUpgradePending = false;
+    additionalSpecialGranted = false;
+    boss = null;
+    bossSpawned = false;
+    document.getElementById('bossOverlay').style.display = 'none';
+    document.getElementById('upgradeBox').style.display = 'none';
+    document.getElementById('cheatCodeBox').style.display = 'none';
+    hideJetColorChoice();
+
+
+    // common: prevent immediate boss spawn
+    postBossCooldown = 60; // 60 frames before next boss can spawn
+
+
+    // Wave-specific behavior
+    if (pendingWave === 2) {
+        // apply the chosen special ability for Wave 2
+        if (selectedWaveAbility) {
+            // use existing chooser to apply effects without triggering resume again
+            chooseSpecialUpgrade(selectedWaveAbility, false);
+            selectedWaveAbility = null;
+        }
+        afterBossDefeat = true;
+        // respawn bots with moderate count
+        const n2 = Math.max(4, savedBotsCount || 4);
+        spawnBots(n2);
+        bots.forEach(b => { b.color = 'green'; b.isBot = true; b.bulletSpeed = b.bulletSpeed || 6; });
+    } else if (pendingWave === 3) {
+        // Wave 3: infinite blue ships, heavier presence and triple-shot
+        wave3Active = true;
+        afterBossDefeat = true;
+        const n3 = Math.max(10, savedBotsCount || 12);
+        spawnBots(n3);
+        bots.forEach(b => { b.color = 'blue'; b.isBot = true; b.bulletSpeed = 7; b.speed = 2.5; });
+    } else {
+        // default (fallback) behavior
+        afterBossDefeat = true;
+        const n = Math.max(4, savedBotsCount || 4);
+        spawnBots(n);
+        bots.forEach(b => { b.color = 'green'; b.isBot = true; b.bulletSpeed = b.bulletSpeed || 6; });
+    }
+
+
+    // restore duoShips as well (keeps any duo granted earlier)
+    if (savedDuoShips && savedDuoShips.length>0) {
+        duoShips = savedDuoShips.map(s => ({ ...s }));
+    }
+
+
+    // clear pending wave
+    pendingWave = 0;
+}
+
+
+function checkCollisions() {
+    // player bullets vs bots
+    const survivingBullets = [];
+    bots.forEach(bot => {
+        player.bullets.forEach(b => {
+            if (b.hit) return;
+            if (dist(b.x,b.y,bot.x,bot.y) < 20) {
+                b.hit = true;
+                player.score++;
+                if (player.contagiousLevel > 0) {
+                    applyContagious(bot);
+                }
+                if (bot.isAndrew) {
+                    bot.health -= 1;
+                    if (bot.health <= 0) {
+                        player.score += 100;
+                        if (mode === "infinite") checkUpgrade();
+                        triggerAndrewDefeatEffects();
+                        bots = bots.filter(other => other !== bot);
+                        andrew = null;
+                        andrewSpawned = false;
+                    }
+                } else {
+                    resetBot(bot);
+                    if (mode === "infinite") checkUpgrade();
+                }
+            }
+        });
+    });
+    player.bullets.forEach(b => {
+        if (!b.hit) survivingBullets.push(b);
+    });
+    player.bullets = survivingBullets;
+
+
+    // duo ship bullets vs bots
+    duoShips.forEach(ship => {
+        const shipBullets = [];
+        ship.bullets.forEach(b => {
+            let hitBot = null;
+            bots.forEach(bot => {
+                if (!hitBot && dist(b.x,b.y,bot.x,bot.y) < 20) {
+                    hitBot = bot;
+                }
+            });
+            if (hitBot) {
+                player.score++;
+                if (hitBot.isAndrew) {
+                    hitBot.health -= 1;
+                    if (hitBot.health <= 0) {
+                        player.score += 100;
+                        triggerAndrewDefeatEffects();
+                        bots = bots.filter(other => other !== hitBot);
+                        andrew = null;
+                        andrewSpawned = false;
+                        if (mode === "infinite") checkUpgrade();
+                    }
+                } else {
+                    resetBot(hitBot);
+                    if (mode === "infinite") checkUpgrade();
+                }
+            } else if (onScreen(b.x,b.y)) {
+                shipBullets.push(b);
+            }
+        });
+        ship.bullets = shipBullets;
+    });
+
+
+    // bot bullets vs player
+    bots.forEach(bot => {
+        const remainingBotBullets = [];
+        bot.bullets.forEach(b => {
+            if (dist(b.x,b.y,player.x,player.y)<20) {
+                if (player.shieldHits > 0) {
+                    player.shieldHits--;
+                    const dx = b.x - player.x;
+                    const dy = b.y - player.y;
+                    const len = Math.hypot(dx, dy);
+                    b.angle = Math.atan2(dy, dx) + Math.PI;
+                    remainingBotBullets.push(b);
+                } else if (mode==="ffa") {
+                    bot.score++;
+                    resetPlayer();
+                } else if (mode==="infinite") {
+                    player.lives--;
+                    resetPlayer();
+                    if (player.lives<=0) {
+                        alert("Game Over");
+                        location.reload();
+                    }
+                }
+            } else {
+                remainingBotBullets.push(b);
+            }
+        });
+        bot.bullets = remainingBotBullets;
+    });
+
+
+    // player razor armor close kill
+    if (player.razorArmor) {
+        bots.forEach(bot => {
+            if (dist(player.x, player.y, bot.x, bot.y) < 26) {
+                player.score++;
+                resetBot(bot);
+                if (mode === "infinite") checkUpgrade();
+            }
+        });
+    }
+
+
+    // bot bullets vs other bots (FFA scoring)
+    bots.forEach(bot => {
+        bots.forEach(other => {
+            if (bot===other) return;
+            bot.bullets.forEach(b => {
+                if (dist(b.x,b.y,other.x,other.y)<20) {
+                    if (mode==="ffa") bot.score++;
+                    resetBot(other);
+                }
+            });
+        });
+    });
+}
+
+
+function dist(x1,y1,x2,y2) {
+    return Math.hypot(x1-x2,y1-y2);
+}
+function resetBot(bot) {
+    bot.x = Math.random()*canvas.width;
+    bot.y = Math.random()*canvas.height;
+}
+function triggerAndrewDefeatEffects() {
+    if (andrewDefeated) return;
+    andrewDefeated = true;
+    player.bouncyLevel = Math.max(player.bouncyLevel, 1);
+    player.multiShot = Math.max(player.multiShot, 3);
+}
+function resetPlayer() {
+    player.x = canvas.width/2;
+    player.y = canvas.height/2;
+}
+
+
+function contagiousExtraKills() {
+    if (player.contagiousLevel <= 1) return 1;
+    return player.contagiousLevel % 2 === 0 ? 2 : 1;
+}
+
+
+function applyContagious(hitBot) {
+    const extraKills = contagiousExtraKills();
+    const nearby = bots
+        .filter(bot => bot !== hitBot)
+        .sort((a, b) => dist(a.x, a.y, hitBot.x, hitBot.y) - dist(b.x, b.y, hitBot.x, hitBot.y));
+    let killed = 0;
+    nearby.forEach(bot => {
+        if (killed >= extraKills) return;
+        if (dist(bot.x, bot.y, hitBot.x, hitBot.y) < 120) {
+            killed += 1;
+            player.score += 1;
+            resetBot(bot);
+        }
+    });
+}
+
+
+function getRandomUpgradeOptions() {
+    const pool = [...UPGRADE_POOL];
+    for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, 3);
+}
+
+
+function showUpgradeOptions() {
+    const buttons = [
+        document.getElementById("upgrade1Btn"),
+        document.getElementById("upgrade2Btn"),
+        document.getElementById("upgrade3Btn")
+    ];
+    const options = getRandomUpgradeOptions();
+    buttons.forEach((btn, idx) => {
+        const upgrade = options[idx];
+        btn.textContent = upgrade.label;
+        btn.onclick = () => chooseUpgrade(upgrade.id);
+    });
+    document.getElementById("upgradeBox").style.display = "block";
+}
+
+
+function checkUpgrade() {
+    if (upgradePending || specialUpgradePending) return;
+    if (!specialOfferGiven && player.score >= specialUpgradeOfferScore) {
+        specialOfferGiven = true;
+        specialUpgradePending = true;
+        showSpecialUpgradeOptions();
+        return;
+    }
+    if (!upgradePending && player.score >= nextUpgradeScore) {
+        upgradePending = true;
+        showUpgradeOptions();
+    }
+}
+
+
+function showSpecialUpgradeOptions() {
+    const buttons = [
+        document.getElementById("upgrade1Btn"),
+        document.getElementById("upgrade2Btn"),
+        document.getElementById("upgrade3Btn")
+    ];
+    SPECIAL_UPGRADE_POOL.forEach((upgrade, idx) => {
+        const btn = buttons[idx];
+        btn.textContent = upgrade.label;
+        btn.onclick = () => chooseSpecialUpgrade(upgrade.id);
+    });
+    document.getElementById("upgradeBox").style.display = "block";
+}
+
+
+function chooseSpecialUpgrade(type, resume = true) {
+    specialUpgradeAwarded = true;
+    specialUpgradePending = false;
+    specialChosen = type;
+    if (type === "laser") {
+        player.laserGun = true;
+    } else if (type === "razor") {
+        player.razorArmor = true;
+    } else if (type === "duo") {
+        if (!player.hasDuoShip) {
+            player.hasDuoShip = true;
+            duoShips.push({
+                x: player.x + 40,
+                y: player.y - 40,
+                speed: 2,
+                bullets: [],
+                bulletSpeed: 5,
+                driftAngle: Math.random()*Math.PI*2,
+                driftTimer: 0,
+                shootTimer: 90
+            });
+        }
+    }
+    document.getElementById("upgradeBox").style.display = "none";
+    if (!upgradePending) {
+        nextUpgradeScore = Math.max(nextUpgradeScore, 110);
+    }
+    if (resume && (pausedForBoss || pendingWave !== 0 || boss)) {
+        resumeAfterBoss();
+    }
+}
+function chooseUpgrade(type) {
+    if (type==="heart") player.lives++;
+    if (type==="speed") player.bulletSpeed += 2;
+    if (type==="multi") player.multiShot = Math.min(player.multiShot+1,5);
+    if (type === "bouncy") player.bouncyLevel += 1;
+    if (type === "thunder") player.shieldHits += 1;
+    if (type === "contagious") player.contagiousLevel += 1;
+
+
+    upgradesChosen[type] = (upgradesChosen[type] || 0) + 1;
+    nextUpgradeScore += upgradeScoreStep;
+    upgradePending = false;
+    document.getElementById("upgradeBox").style.display = "none";
+}
+
+
+function drawCursor(x,y,color,shape) {
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+
+
+    if (shape==="dot") {
+        ctx.beginPath();
+        ctx.arc(x,y,8,0,Math.PI*2);
+        ctx.fill();
+    } else if (shape==="triangle") {
+        ctx.beginPath();
+        ctx.moveTo(x, y-12);
+        ctx.lineTo(x+10, y+10);
+        ctx.lineTo(x-10, y+10);
+        ctx.closePath();
+        ctx.fill();
+    } else if (shape==="arrow") {
+        ctx.beginPath();
+        ctx.moveTo(x, y-14);
+        ctx.lineTo(x+8, y);
+        ctx.lineTo(x+2, y);
+        ctx.lineTo(x+2, y+14);
+        ctx.lineTo(x-2, y+14);
+        ctx.lineTo(x-2, y);
+        ctx.lineTo(x-8, y);
+        ctx.closePath();
+        ctx.fill();
+    } else if (shape==="jet") {
+        ctx.beginPath();
+        ctx.moveTo(x, y-16);
+        ctx.lineTo(x+6, y);
+        ctx.lineTo(x+2, y+10);
+        ctx.lineTo(x-2, y+10);
+        ctx.lineTo(x-6, y);
+        ctx.closePath();
+        ctx.fill();
+    } else { // cursor
+        ctx.beginPath();
+        ctx.moveTo(x, y-16);
+        ctx.lineTo(x+10, y+16);
+        ctx.lineTo(x, y+8);
+        ctx.lineTo(x-10, y+16);
+        ctx.closePath();
+        ctx.fill();
+    }
+}
+
+
+function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+
+    // player
+    const playerColor = jetHackActive ? jetHackPlayerColor : (andrewDefeated ? "yellow" : design.color);
+    const playerShape = jetHackActive ? "jet" : design.shape;
+    if (player.razorArmor) {
+        ctx.strokeStyle = "#8c8c8c";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    drawCursor(player.x, player.y, playerColor, playerShape);
+    if (player.shieldHits > 0) {
+        ctx.strokeStyle = "yellow";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, 35, 0, Math.PI*2);
+        ctx.stroke();
+    }
+
+
+    // bots (color can change after boss defeat)
+    bots.forEach(bot => {
+        const botColor = jetHackActive ? jetHackBotColor : (andrewDefeated ? "yellow" : (bot.color || "red"));
+        drawCursor(bot.x, bot.y, botColor, "cursor");
+    });
+    duoShips.forEach(ship => {
+        drawCursor(ship.x, ship.y, andrewDefeated ? "yellow" : "cyan", "jet");
+    });
+
+
+    // bullets
+    ctx.fillStyle = "white";
+    player.bullets.forEach(b => {
+        if (pb2Active) {
+            ctx.fillStyle = pb2BulletColor;
+            ctx.fillRect(b.x-4, b.y-4, 8, 8);
+        } else if (jetHackActive) {
+            ctx.strokeStyle = "#7ecfff";
+            ctx.fillStyle = "lightgreen";
+            ctx.lineWidth = 2;
+            ctx.fillRect(b.x-4, b.y-4, 8, 8);
+            ctx.strokeRect(b.x-4, b.y-4, 8, 8);
+        } else if (player.laserGun) {
+            ctx.fillStyle = "white";
+            ctx.fillRect(b.x-4, b.y-20, 8, 40);
+        } else {
+            ctx.fillStyle = "white";
+            ctx.fillRect(b.x-3, b.y-3, 6, 6);
+        }
+    });
+    // bot bullets use each bot's color (become green after boss)
+    bots.forEach(bot => {
+        ctx.fillStyle = bot.color || "red";
+        bot.bullets.forEach(b => ctx.fillRect(b.x-3,b.y-3,6,6));
+    });
+    ctx.fillStyle = "cyan";
+    duoShips.forEach(ship => {
+        ship.bullets.forEach(b => ctx.fillRect(b.x-3,b.y-3,6,6));
+    });
+
+
+    // draw boss and meteors (if any)
+    drawBoss();
+
+
+    ctx.fillStyle = "white";
+    ctx.font = "18px Arial";
+    ctx.fillText("Score: " + player.score, 20, 30);
+    if (mode==="ffa") {
+        bots.forEach((bot,i) => {
+            ctx.fillText("Bot "+(i+1)+": "+bot.score, 20, 60+i*20);
+        });
+    }
+    if (mode==="infinite") {
+        ctx.fillText("Lives: " + player.lives, 20, 60);
+    }
+
+
+    if (mode==="1v1" && remoteState) {
+        // draw remote player
+        drawCursor(remoteState.x, remoteState.y, "red", "cursor");
+        ctx.fillStyle = "white";
+        ctx.fillText("Your Lives: " + player.lives, 20, 30);
+        ctx.fillText("Enemy Lives: " + remoteState.lives, 20, 60);
+
+
+        // bullets
+        if (pb2Active) {
+            ctx.fillStyle = pb2BulletColor;
+            player.bullets.forEach(b => ctx.fillRect(b.x-4,b.y-4,8,8));
+        } else {
+            ctx.fillStyle = "white";
+            player.bullets.forEach(b => ctx.fillRect(b.x-3,b.y-3,6,6));
+        }
+        ctx.fillStyle = "red";
+        remoteState.bullets.forEach(b => ctx.fillRect(b.x-3,b.y-3,6,6));
+    }
+}
+
+
+function checkWinFFA() {
+    if (mode!=="ffa") return;
+    if (!boss && bossPhase === 0 && player.score>=150) {
+        spawnBoss();
+        return;
+    }
+    if (player.score>=100) {
+        alert("You win!");
+        location.reload();
+    }
+    bots.forEach((bot,i) => {
+        if (bot.score>=100) {
+            alert("Bot "+(i+1)+" wins!");
+            location.reload();
+        }
+    });
+}
+
+
+function checkGameOver() {
+    if (mode === "infinite" && player.lives <= 0) {
+        alert("Game Over");
+        location.reload();
+    }
+}
+
+
+function gameLoop() {
+    if (mode==="ffa" || mode==="infinite") {
+        if (upgradePending || specialUpgradePending) {
+            draw();
+            requestAnimationFrame(gameLoop);
+            return;
+        }
+        if (pausedForBoss) {
+            // show paused overlay
+            draw();
+            requestAnimationFrame(gameLoop);
+            return;
+        }
+
+
+        // cooldown before next boss spawn
+        if (postBossCooldown > 0) {
+            postBossCooldown--;
+        }
+
+
+        // spawn Pablo at score 150, then Gregory at score 500
+        if (mode === "infinite" && boss === null && bossPhase === 0 && player.score >= 150 && postBossCooldown === 0) {
+            spawnBoss();
+        }
+        if (mode === "infinite" && boss === null && bossPhase === 1 && player.score >= 500 && postBossCooldown === 0) {
+            spawnGregoryBoss();
+        }
+        if (mode === "infinite" && !andrewSpawned && player.score >= 1000) {
+            spawnAndrew();
+        }
+        movePlayer();
+        moveBots();
+        moveDuoShips();
+        moveBullets();
+        // update boss and projectiles
+        if (boss) updateBoss();
+        moveMissiles();
+        moveMeteors();
+        // check boss/projectile collisions first so player bullets hitting them don't get counted elsewhere
+        checkBossCollisions();
+        checkCollisions();
+        checkGameOver();
+        checkWinFFA();
+        draw();
+    } else if (mode==="1v1") {
+        movePlayer();
+        moveBullets1v1();
+        checkCollisions1v1();
+        sendState1v1();
+        draw();
+    }
+    requestAnimationFrame(gameLoop);
+}
+
+
+/* 1v1 ONLINE */
+
+
+function host1v1() {
+    const code = Math.floor(1000+Math.random()*9000).toString();
+    setupWS();
+    ws.addEventListener('open', () => {
+        ws.send(JSON.stringify({ type:'host', code }));
+        document.getElementById("hostCodeText").textContent = "Your code: " + code;
+        showWSStatus('Hosting — waiting for player... (code: ' + code + ')', 0);
+    });
+    ws.addEventListener('message', e => handleWSMessage(e));
+}
+function showJoin() {
+    document.getElementById("joinBox").style.display = "block";
+}
+function getWebSocketUrl() {
+    // If a relay URL is set, use it (recommended for Netlify deploys)
+    if (typeof RELAY_WS_URL !== 'undefined' && RELAY_WS_URL && RELAY_WS_URL.length > 0) return RELAY_WS_URL;
+
+    // If opened as a local file, prompt for the WebSocket server (host:port or full ws:// URL)
+    if (location.protocol === 'file:') {
+        let host = localStorage.getItem('wsHost');
+        if (!host) {
+            host = prompt('This page is opened as file:// — enter WebSocket server (host:port) or full ws:// URL', 'localhost:3000');
+            if (!host) return null;
+            localStorage.setItem('wsHost', host);
+        }
+        if (host.startsWith('ws://') || host.startsWith('wss://')) return host;
+        return 'ws://' + host;
+    }
+
+    const isSecure = location.protocol === 'https:';
+    const protocol = isSecure ? 'wss:' : 'ws:';
+    const hostPort = location.host; // hostname:port if present
+    return `${protocol}//${hostPort}`;
+}
+function showWSStatus(msg, timeout = 3000) {
+    const el = document.getElementById('wsStatus');
+    if (!el) return;
+    const needHelp = /Connection|Join failed|No WebSocket|Disconnected|Connection failed|error/i.test(msg);
+    if (needHelp) {
+        el.innerHTML = msg + ' <a id="wsHelpLink" href="#" style="color:#ffd; margin-left:8px; text-decoration:underline;">Why?</a>';
+        // attach click
+        setTimeout(() => {
+            const link = document.getElementById('wsHelpLink');
+            if (link) link.addEventListener('click', e => { e.preventDefault(); showWSHelp(); });
+        }, 0);
+    } else {
+        el.textContent = msg;
+    }
+    el.style.display = 'block';
+    if (showWSStatus._t) clearTimeout(showWSStatus._t);
+    if (timeout) showWSStatus._t = setTimeout(() => { el.style.display = 'none'; }, timeout);
+}
+
+
+function showWSHelp() {
+    const h = document.getElementById('wsHelp');
+    if (!h) return;
+    h.style.display = 'block';
+}
+
+
+function hideWSHelp() {
+    const h = document.getElementById('wsHelp');
+    if (!h) return;
+    h.style.display = 'none';
+}
+
+
+function join1v1() {
+    const code = document.getElementById("joinCodeInput").value.trim();
+    if (!code) return;
+
+
+    setupWS();
+    ws.addEventListener('open', () => {
+        ws.send(JSON.stringify({ type: "join", code }));
+        showWSStatus('Joining lobby ' + code + '...');
+    });
+    ws.addEventListener('message', e => handleWSMessage(e));
+}
+function setupWS() {
+    const url = getWebSocketUrl();
+    if (!url) {
+        showWSStatus('No WebSocket URL configured', 3000);
+        return;
+    }
+
+
+    try {
+        showWSStatus('Connecting...');
+        ws = new WebSocket(url);
+    } catch (err) {
+        showWSStatus('Connection failed', 3000);
+        console.error('WebSocket create error', err);
+        return;
+    }
+
+
+    ws.addEventListener('open', () => {
+        showWSStatus('Connected', 1500);
+    });
+    ws.addEventListener('error', (ev) => {
+        showWSStatus('Connection error', 3000);
+    });
+    ws.addEventListener('close', () => {
+        showWSStatus('Disconnected', 2000);
+    });
+}
+function handleWSMessage(e) {
+    const data = JSON.parse(e.data);
+    if (data.type==="host-ok") {
+        // server acknowledged host
+        const code = data.code;
+        document.getElementById("hostCodeText").textContent = "Your code: " + code;
+        showWSStatus('Waiting for player to join... (code: ' + code + ')', 0);
+        return;
+    }
+    if (data.type==="join-fail") {
+        showWSStatus('Join failed: lobby not found or full', 3000);
+        return;
+    }
+    if (data.type==="join-ok") {
+        showWSStatus('Joined lobby — waiting for host...', 0);
+        return;
+    }
+    if (data.type==="ready") {
+        playerId = data.playerId;
+        showWSStatus('Both players connected — starting...', 1000);
+        start1v1Game();
+        return;
+    }
+    if (data.type==="state") {
+        remoteState = data.payload;
+        return;
+    }
+}
+function start1v1Game() {
+    mode = "1v1";
+    resetPlayerState();
+    player.lives = 5;
+    player.bullets = [];
+    remoteState = { x: canvas.width/2, y: canvas.height/2, bullets: [], lives:5 };
+    document.getElementById("onevoneMenu").style.display = "none";
+    document.getElementById("shootButton").style.display = "block";
+    setJoystickVisibility(true);
+    gameLoop();
+}
+function moveBullets1v1() {
+    player.bullets.forEach(b => {
+        b.x += Math.cos(b.angle)*player.bulletSpeed;
+        b.y += Math.sin(b.angle)*player.bulletSpeed;
+    });
+    player.bullets = player.bullets.filter(b => onScreen(b.x,b.y));
+}
+function checkCollisions1v1() {
+    if (!remoteState) return;
+    player.bullets.forEach(b => {
+        if (dist(b.x,b.y,remoteState.x,remoteState.y)<20) {
+            // hit enemy
+        }
+    });
+    // remote bullets handled on other client; we only track our lives via remoteState if desired
+}
+function sendState1v1() {
+    if (!ws || ws.readyState!==1) return;
+    const payload = {
+        x: player.x,
+        y: player.y,
+        bullets: player.bullets,
+        lives: player.lives
+    };
+    ws.send(JSON.stringify({ type:'state', payload }));
+}
+</script>
+</body>
+</html>
+
+
